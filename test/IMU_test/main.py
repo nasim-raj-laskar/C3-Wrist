@@ -1,62 +1,31 @@
 from machine import I2C, Pin
 import time
+import ssd1306
 
-# =========================
-# MPU6050 CONSTANTS
-# =========================
 MPU6050_ADDRESS = 0x68
-
 POWER_MANAGEMENT_1 = 0x6B
 ACCEL_X_HIGH = 0x3B
 
-ACCEL_SCALE_FACTOR = 16384   # LSB per g (±2g range)
-GYRO_SCALE_FACTOR = 131      # LSB per degree/second (±250 dps)
+ACCEL_SCALE_FACTOR = 16384
+GYRO_SCALE_FACTOR = 131
 
-# =========================
-# I2C SETUP
-# =========================
-i2c = I2C(
-    0,
-    scl=Pin(22),
-    sda=Pin(21),
-    freq=400000
-)
+i2c = I2C(0, scl=Pin(22), sda=Pin(21), freq=400000)
 
-# =========================
-# INITIALIZE MPU6050
-# =========================
+oled = ssd1306.SSD1306_I2C(128, 32, i2c)
+
 def initialize_mpu6050():
-    i2c.writeto_mem(
-        MPU6050_ADDRESS,
-        POWER_MANAGEMENT_1,
-        b'\x00'
-    )
+    i2c.writeto_mem(MPU6050_ADDRESS, POWER_MANAGEMENT_1, b'\x00')
     time.sleep(0.1)
-    print("MPU6050 initialized")
 
-# =========================
-# READ 16-BIT SIGNED VALUE
-# =========================
+# READ SIGNED 16-BIT VALUE FROM REGISTER
 def read_signed_16bit(register_address):
-    data = i2c.readfrom_mem(
-        MPU6050_ADDRESS,
-        register_address,
-        2
-    )
-
-    high_byte = data[0]
-    low_byte = data[1]
-
-    value = (high_byte << 8) | low_byte
-
+    data = i2c.readfrom_mem(MPU6050_ADDRESS, register_address, 2)
+    value = (data[0] << 8) | data[1]
     if value > 32767:
-        value = value - 65536
-
+        value -= 65536
     return value
 
-# =========================
 # READ ALL SENSOR VALUES
-# =========================
 def read_mpu6050():
     accel_x = read_signed_16bit(ACCEL_X_HIGH)
     accel_y = read_signed_16bit(ACCEL_X_HIGH + 2)
@@ -68,45 +37,33 @@ def read_mpu6050():
 
     return accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z
 
-# =========================
-# MAIN LOOP
-# =========================
+
 def main():
     initialize_mpu6050()
-    print("Press Ctrl+C to stop\n")
+    oled.fill(0)
+    oled.text("MPU6050 Ready", 0, 0)
+    oled.show()
+    time.sleep(1)
 
-    try:
-        while True:
-            accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z = read_mpu6050()
+    while True:
+        ax, ay, az, gx, gy, gz = read_mpu6050()
 
-            # Convert accelerometer values to g
-            accel_x_g = accel_x / ACCEL_SCALE_FACTOR
-            accel_y_g = accel_y / ACCEL_SCALE_FACTOR
-            accel_z_g = accel_z / ACCEL_SCALE_FACTOR
+        ax_g = ax / ACCEL_SCALE_FACTOR
+        ay_g = ay / ACCEL_SCALE_FACTOR
+        az_g = az / ACCEL_SCALE_FACTOR
 
-            # Convert gyroscope values to degrees per second
-            gyro_x_dps = gyro_x / GYRO_SCALE_FACTOR
-            gyro_y_dps = gyro_y / GYRO_SCALE_FACTOR
-            gyro_z_dps = gyro_z / GYRO_SCALE_FACTOR
+        gx_dps = gx / GYRO_SCALE_FACTOR
+        gy_dps = gy / GYRO_SCALE_FACTOR
+        gz_dps = gz / GYRO_SCALE_FACTOR
 
-            print(
-                "ACC (g):",
-                round(accel_x_g, 2),
-                round(accel_y_g, 2),
-                round(accel_z_g, 2),
-                " | GYR (dps):",
-                round(gyro_x_dps, 1),
-                round(gyro_y_dps, 1),
-                round(gyro_z_dps, 1)
-            )
+        oled.fill(0)
+        oled.text("ACC(g):", 0, 0)
+        oled.text("X:{:.2f}".format(ax_g), 0, 10)
+        oled.text("Y:{:.2f}".format(ay_g), 64, 10)
+        oled.text("Z:{:.2f}".format(az_g), 0, 20)
 
-            time.sleep(0.5)
+        oled.show()
+        time.sleep(0.5)
 
-    except KeyboardInterrupt:
-        print("\nStopped by user")
-
-# =========================
-# PROGRAM ENTRY POINT
-# =========================
 if __name__ == "__main__":
     main()
