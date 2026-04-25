@@ -1,11 +1,10 @@
-# C3-Wrist
+# VitalEdge
 
-A MicroPython-based wearable health monitoring device built on the ESP32-C3, featuring real-time vitals tracking on a OLED display.
+A MicroPython-based wearable health monitoring device built on the ESP32-C3, featuring real-time vitals tracking on a 128×32 OLED display.
 
 <p align="center">
   <img src="assets/img1.jpg" width="45%" />
   <img src="assets/img2.jpg" width="45%" />
-  
 </p>
 
 ---
@@ -22,6 +21,22 @@ A MicroPython-based wearable health monitoring device built on the ESP32-C3, fea
 | Button Action | GPIO INPUT_PULLUP | — | 10 |
 | LED | GPIO OUTPUT | — | 9 |
 
+---
+
+## Power
+
+The device is powered by a **3.7V 450mAh single-cell LiPo battery** connected through a dedicated **TP4056-based charging module**. This allows the battery to be charged in-circuit via the module's USB input without removing it from the device.
+
+| Parameter | Value |
+|-----------|-------|
+| Battery chemistry | Li-Ion / LiPo (1S) |
+| Nominal voltage | 3.7V |
+| Capacity | 450 mAh |
+| Charge voltage | 4.2V (CC/CV) |
+| Charge current | 1C max (set by PROG resistor on TP4056) |
+| Protection | Over-charge, over-discharge, short-circuit (via DW01A + FS8205A on module) |
+
+An **AMS1117-3.3** LDO regulator sits between the battery output and the ESP32-C3's supply rail, stepping the LiPo voltage (3.7V nominal, 4.2V max) down to a stable 3.3V. The AMS1117 has a typical dropout voltage of ~1V, so regulation holds down to ~4.3V input — covering the full usable LiPo discharge range. The charging module's `CHRG` and `STDBY` indicator pins can optionally be wired to GPIO inputs for charge-state detection in firmware.
 
 ---
 
@@ -48,7 +63,3 @@ clock ──(Select)──► menu ──(Select: Set Time)──► set_time
 | `menu` | Scrollable 3-item menu via Next button |
 | `set_time` | Increment hour/minute via Action button |
 | `stopwatch` | 1Hz counter; Action = start/stop, Select = reset |
-
-**Big-digit rendering** uses a pixel-font dict of 5×7 bitmaps, scaled by a `scale` factor (default 3×) and drawn with `oled.fill_rect()`. Each character cell is `5*scale + spacing` pixels wide.
-
----
