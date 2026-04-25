@@ -1,4 +1,4 @@
-from machine import Pin
+from machine import Pin          #type: ignore
 import time
 
 # Try GPIO 8 first (most common for C3 SuperMini)
