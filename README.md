@@ -1,4 +1,4 @@
-# VitalEdge
+# C3-Wrist
 
 A MicroPython-based wearable health monitoring device built on the ESP32-C3, featuring real-time vitals tracking on a 128×32 OLED display.
 
